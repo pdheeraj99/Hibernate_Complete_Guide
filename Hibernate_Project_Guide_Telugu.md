@@ -176,3 +176,90 @@ public class HibernateDemoApplication {
 ```
 
 "Done! Ippudu `mvn spring-boot:run` command isthe, application start avvali, and console lo 'Raja Kumar' ani print avvali. Appudu mana setup 100% success ayinattu."
+
+---
+## Step 6: Adding a `@OneToOne` Relationship
+
+"Okay, mana app baga panicheestondi. Ippudu next level ki veldam. Prathi `Student` ki oka `Address` undali anukundam. Idi perfect `@OneToOne` relationship example. So, plan enti? First, `Address` ane kottha entity create cheyali. Tarvatha, `Student` entity lo deeniki link ivvali. `@OneToOne` and `@JoinColumn` vaadali. Let's do it."
+
+### 6a. Create the `Address` Entity
+
+"First, `Address.java` create cheddam. `entity` package lo. Simple POJO with ID, street, and city."
+
+File Path: `src/main/java/com/example/hibernatedemo/entity/Address.java`
+```java
+@Entity
+public class Address {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String street;
+    private String city;
+
+    // Constructors, Getters, and Setters...
+}
+```
+
+### 6b. Update the `Student` Entity
+
+"Ippudu `Student` class open chesi, `Address` field add cheddam. `@OneToOne` annotation pedadam. `CascadeType.ALL` isthe manchi pani - student ni save chesthe, address kuda save aipotundi. `@JoinColumn` tho foreign key column peru chepdam."
+
+File Path: `src/main/java/com/example/hibernatedemo/entity/Student.java`
+```java
+//... imports
+import javax.persistence.CascadeType;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToOne;
+
+@Entity
+public class Student {
+    // ... other fields
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "address_id", referencedColumnName = "id")
+    private Address address;
+
+    // ... constructors, getters, and other setters
+
+    public Address getAddress() {
+        return address;
+    }
+
+    public void setAddress(Address address) {
+        this.address = address;
+    }
+}
+```
+
+### 6c. Update the `CommandLineRunner` to Test It
+
+"Final step, antha work avutundo ledo test cheyali. Main class lo unna `CommandLineRunner` ni update cheddam. Oka `Address` create chesi, oka `Student` create chesi, renditini link chesi, `studentRepository.save()` ni call cheddam. Output lo student tho paatu address kuda ravali."
+
+File Path: `src/main/java/com/example/hibernatedemo/HibernateDemoApplication.java`
+```java
+    //...
+    @Bean
+    public CommandLineRunner demo(StudentRepository repository) {
+        return (args) -> {
+            // Create an Address
+            Address address = new Address("123 Main St", "Hyderabad");
+
+            // Create a Student and link the Address
+            Student student = new Student("Ravi", "Teja", "ravi.teja@example.com");
+            student.setAddress(address);
+
+            // Save the student. Address kuda save avutundi.
+            repository.save(student);
+
+            // Fetch and display
+            System.out.println("Students found with findAll():");
+            System.out.println("-------------------------------");
+            for (Student s : repository.findAll()) {
+                System.out.println(s.getFirstName() + " " + s.getLastName() + " lives at: " + s.getAddress().getCity());
+            }
+        };
+    }
+    //...
+```
+
+"Perfect! Ippudu run chesthe, 'Ravi Teja lives at: Hyderabad' ani ravali. Our relationship is working!"

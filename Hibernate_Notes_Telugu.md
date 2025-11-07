@@ -109,3 +109,111 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
 Eppudu manam `StudentRepository` ni mana code lo vaadukuni, direct ga `repository.save(studentObject)` ani anochu. Database lo aey save aipotundi. SQL query rayaledu, session open cheyaledu, transaction manage cheyaledu. Antha Spring chuskundi.
 
 This is the real power of using Hibernate with Spring Boot. Manam business logic meeda focus cheyochu, ee boring database code meeda kaadu.
+
+---
+
+## 6. Entity Relationships - The Real Deal!
+
+Database lo tables okadanikokati connect ayi untayi kada? For example, `students` table, `addresses` table ki link ayi undochu. Ee connection ne manam **Relationship** antam. Hibernate lo idi chala powerful feature.
+
+Relationships lo 4 main types untayi:
+1.  **One-to-One:** Oka student ki okate address.
+2.  **One-to-Many:** Oka teacher chala courses cheptaru.
+3.  **Many-to-One:** Chala courses ni oke teacher cheptaru (idi just One-to-Many ki reverse).
+4.  **Many-to-Many:** Chala students chala courses lo join avvochu.
+
+Ippudu manam first three gurinchi detail ga chuddam.
+
+### i. `@OneToOne` Relationship
+
+**Scenario:** Prathi `Student` ki, వాళ్లకు సంబంధించిన `Address` okkate untundi.
+
+**Ela chestam?**
+1.  Manam `Student` entity tho పాటు, `Address` ane kottha entity ni create cheyali.
+2.  `Student` class lo, `Address` type tho oka variable pettali.
+3.  Aah variable meeda `@OneToOne` annotation pettali.
+
+**Foreign Key:**
+Database lo, ee rendu tables ni link cheyadaniki, `student` table lo `address_id` ane oka extra column pedatham. Deenne **foreign key** antam. Ee column `address` table lo unna primary key ni point chestundi.
+
+Ee foreign key column ni specify cheyadaniki, manam `@JoinColumn` ane annotation vaadatham.
+
+#### Example Code Snippet:
+
+**`Student.java` (Owning side - ikkade foreign key untundi)**
+```java
+@Entity
+public class Student {
+    // ... other fields like id, firstName, etc.
+
+    @OneToOne(cascade = CascadeType.ALL) // Address ni save chesthe Student kuda save avvali
+    @JoinColumn(name = "address_id", referencedColumnName = "id")
+    private Address address;
+
+    // ... getters and setters
+}
+```
+- **`cascade = CascadeType.ALL`**: Ante, "nenu student ni save chesthe, daanitho paatu address ni kuda save chesey" ani cheppadam.
+- **`@JoinColumn(name = "address_id")`**: `student` table lo create avvalsina foreign key column peru.
+
+**`Address.java`**
+```java
+@Entity
+public class Address {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String street;
+    private String city;
+
+    // ... getters and setters
+}
+```
+Ippudu meeru oka `Student` object ni save chesthe, Hibernate first `Address` object ni save chesi, daani ID theeskuni, aah ID ni `student` table lo unna `address_id` column lo petti, tarvatha `Student` ni save chestundi. Antha automatic!
+
+### ii. `@OneToMany` & `@ManyToOne` Relationships
+
+Ee rendu ఎప్పుడూ a kalise a untayi. Okati lekunda inkoti undadu.
+
+**Scenario:** Oka `Teacher` chala `Course`s teeskuntaru.
+- `Teacher` side nunchi chusthe, idi **One-to-Many** (oka teacher, chala courses).
+- `Course` side nunchi chusthe, idi **Many-to-One** (chala courses, oke teacher).
+
+**Rule of Thumb:** Foreign key ఎప్పుడూ "Many" side unna table lo ne untundi. Ante, `course` table lo `teacher_id` ane column untundi. Endukante, prathi course ki teacher evaro cheppagalam. Kaani teacher table lo course_id pettalem, endukante aayana chala courses cheptaru.
+
+So, `@ManyToOne` unna side ni **Owning Side** antam.
+
+#### Example Code Snippet:
+
+**`Course.java` (Owning Side - "Many" side)**
+```java
+@Entity
+public class Course {
+    // ... id, courseName, etc.
+
+    @ManyToOne(fetch = FetchType.LAZY) // Default LAZY, performance ki manchidi
+    @JoinColumn(name = "teacher_id")
+    private Teacher teacher;
+
+    // ... getters and setters
+}
+```
+- Ikkada `course` table lo `teacher_id` ane foreign key create avutundi.
+
+**`Teacher.java` ("One" side)**
+```java
+@Entity
+public class Teacher {
+    // ... id, teacherName, etc.
+
+    @OneToMany(mappedBy = "teacher")
+    private Set<Course> courses = new HashSet<>();
+
+    // ... getters and setters
+}
+```
+- **`mappedBy = "teacher"`**: Idi chala important. Idi Hibernate ki cheptundi: "Hey, ee relationship ki sambandinchina foreign key `Course` class lo unna `teacher` ane variable daggara undi. Ikkada nuvvu kottha column create cheyaku."
+- `mappedBy` pettakapothe, Hibernate confuse ayyi, inko extra link table create chesestundi. So, don't forget it!
+
+Ee relationships ni manam project lo implement chesi chusthe, meeku inka clear ga artham avutundi.

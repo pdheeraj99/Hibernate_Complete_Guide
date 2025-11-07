@@ -1,5 +1,6 @@
 package com.example.hibernatedemo;
 
+import com.example.hibernatedemo.entity.Address;
 import com.example.hibernatedemo.entity.Student;
 import com.example.hibernatedemo.repository.StudentRepository;
 import org.springframework.boot.CommandLineRunner;
@@ -17,14 +18,21 @@ public class HibernateDemoApplication {
     @Bean
     public CommandLineRunner demo(StudentRepository repository) {
         return (args) -> {
-            // Save a new student
-            repository.save(new Student("Raja", "Kumar", "raja.kumar@example.com"));
+            // Create an Address
+            Address address = new Address("123 Main St", "Hyderabad");
 
-            // Fetch all students
+            // Create a Student and link the Address
+            Student student = new Student("Ravi", "Teja", "ravi.teja@example.com");
+            student.setAddress(address);
+
+            // Save the student. Because of CascadeType.ALL, the address will also be saved.
+            repository.save(student);
+
+            // Fetch all students and display their address
             System.out.println("Students found with findAll():");
             System.out.println("-------------------------------");
-            for (Student student : repository.findAll()) {
-                System.out.println(student.getFirstName() + " " + student.getLastName());
+            for (Student s : repository.findAll()) {
+                System.out.println(s.getFirstName() + " " + s.getLastName() + " lives at: " + s.getAddress().getCity());
             }
             System.out.println("");
         };
